@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+from pathlib import Path
 
 import streamlit as st
 
@@ -8,7 +9,6 @@ from src.agent import AgenteDatos, offline_summary
 from src.data_loader import (
     dataset_profile,
     enrich,
-    load_default_data,
     load_uploaded_data,
     preview_frame,
     variable_quality,
@@ -35,7 +35,28 @@ from src.visualizations import (
     score_distribution,
 )
 
+ASSETS = Path(__file__).resolve().parent / "assets"
+
 st.set_page_config(page_title="TEF Chile · Fraude", page_icon="💸", layout="wide")
+st.markdown(
+    """
+    <style>
+        .block-container { padding-top: 1.2rem; }
+        [data-testid="stImage"] img {
+            border-radius: 18px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+        }
+        .fin-caption {
+            text-align: center;
+            color: #334155;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            margin: 0.15rem 0 0.8rem 0;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 SEGMENTOS = {
     "Tipo de transacción": ("transaction_type", False),
@@ -53,12 +74,6 @@ DISTRIBUCIONES = [
     "last_24h_count",
     "distance_sender_receiver",
 ]
-
-
-@st.cache_data(show_spinner="Cargando y analizando el dataset TEF...")
-def prepare_default():
-    frame = enrich(load_default_data())
-    return _with_model(frame)
 
 
 @st.cache_data(show_spinner="Procesando el CSV cargado...")
@@ -104,22 +119,26 @@ def build_tools(frame, model_result):
 
 st.title("Explorador de fraude en transferencias electrónicas")
 st.caption("TEF Chile · dataset sintético · Streamlit, scikit-learn y Ollama")
+st.image(ASSETS / "hero_sistema_financiero.jpg", width="stretch")
+
+col_transferencias, col_analisis, col_seguridad = st.columns(3)
+with col_transferencias:
+    st.image(ASSETS / "panel_transferencias.jpg", width="stretch")
+    st.markdown('<p class="fin-caption">Transferencias entre cuentas</p>', unsafe_allow_html=True)
+with col_analisis:
+    st.image(ASSETS / "panel_analisis.jpg", width="stretch")
+    st.markdown('<p class="fin-caption">Análisis de transacciones</p>', unsafe_allow_html=True)
+with col_seguridad:
+    st.image(ASSETS / "panel_seguridad.jpg", width="stretch")
+    st.markdown('<p class="fin-caption">Señales de seguridad</p>', unsafe_allow_html=True)
 
 with st.sidebar:
     st.header("Configuración")
-    uploaded = st.file_uploader("CSV opcional", type=["csv"])
+    uploaded = st.file_uploader("Cargar dataset", type=["csv"])
     model_name = st.text_input("Modelo Ollama", value="llama3.2:3b")
     st.caption("Si Ollama no está activo, el análisis y los gráficos se mantienen. El agente usa un resumen calculado en Python.")
 
-try:
-    df, model_result, model_error = prepare_upload(uploaded.getvalue()) if uploaded else prepare_default()
-except Exception as exc:
-    st.error(f"No fue posible cargar el dataset: {exc}")
-    st.stop()
-
-profile = dataset_profile(df)
-agente = AgenteDatos(modelo=model_name, herramientas=build_tools(df, model_result))
-ollama_ok, installed_models, _detail = agente.estado()
+ollama_ok, installed_models, _detail = AgenteDatos(modelo=model_name).estado()
 
 with st.sidebar:
     st.markdown("---")
@@ -135,6 +154,19 @@ with st.sidebar:
     else:
         st.warning("Ollama no detectado")
 
+if uploaded is None:
+    st.info("Carga el dataset CSV desde la barra lateral para iniciar el análisis.")
+    st.stop()
+
+try:
+    df, model_result, model_error = prepare_upload(uploaded.getvalue())
+except Exception as exc:
+    st.error(f"No fue posible cargar el dataset: {exc}")
+    st.stop()
+
+profile = dataset_profile(df)
+agente = AgenteDatos(modelo=model_name, herramientas=build_tools(df, model_result))
+
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("Transacciones", f"{profile['rows']:,}".replace(",", "."))
 c2.metric("Fraudes", f"{profile['frauds']:,}".replace(",", "."))
@@ -147,21 +179,10 @@ tab_datos, tab_exploracion, tab_modelo, tab_agente, tab_arquitectura = st.tabs([
 
 with tab_datos:
     st.subheader("Dataset de trabajo")
-    if uploaded is None:
-        st.info(
-            "Se usa el archivo incluido data/TEF_chile.csv. El diccionario lo describe como dataset sintético "
-            "de transferencias electrónicas de fondos, con montos en CLP. "
-            f"Periodo: {profile['period_start']} a {profile['period_end']}."
-        )
-    else:
-        st.info("Se está utilizando el CSV cargado desde la interfaz. Debe incluir la columna is_fraud.")
-
     st.markdown("#### Muestra analítica")
-    st.caption("La vista omite identificadores de cuenta, dispositivo e IP.")
     st.dataframe(preview_frame(df), width="stretch", hide_index=True)
 
     st.markdown("#### Calidad de datos")
-    st.caption("La tabla lista las columnas del CSV. La aplicación agrega hora, clase, alerta_comunicacion y cambio_cuenta para explorar.")
     st.dataframe(variable_quality(df), width="stretch", hide_index=True)
 
     st.markdown("#### Resumen numérico")
@@ -307,7 +328,3 @@ Streamlit  ←  src/agent.py  →  src/llm_client.py  →  Ollama local""",
         """
     )
 
-st.markdown("---")
-st.caption(
-    "Trabajo académico sobre un dataset sintético. No es un sistema de prevención de fraude ni una herramienta de decisión bancaria."
-)

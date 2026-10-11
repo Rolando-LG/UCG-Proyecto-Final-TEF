@@ -1,5 +1,8 @@
 # Proyecto final · Fraude en transferencias electrónicas (TEF)
 
+- **Repositorio:** https://github.com/Rolando-LG/UCG-Proyecto-Final-TEF
+- **Video de la aplicación:** https://youtu.be/3u8X8Fbs5Q8
+
 Aplicación modular en Streamlit para explorar un dataset sintético de Transferencias Electrónicas de Fondos en Chile, entrenar una línea base de clasificación y consultar un agente local con Ollama.
 
 El trabajo pertenece al módulo **Paradigmas de Programación para Inteligencia Artificial y Análisis de Datos**. El análisis es académico: no es un sistema de prevención de fraude ni una herramienta de decisión bancaria.
@@ -117,11 +120,11 @@ python -m streamlit run app.py
 
 En Windows también se puede usar `run_app.bat`. El script crea el entorno, instala `requirements.txt` y abre la aplicación.
 
-El dataset ya está en `data/TEF_chile.csv`. La interfaz permite cargar otro CSV si incluye la columna `is_fraud`. El diccionario de variables está en `data/diccionario_variables_tef.md`.
+El dataset ya está en `data/TEF_chile.csv`. La interfaz no lo abre sola: hay que cargarlo desde la barra lateral. El archivo debe incluir la columna `is_fraud`. El diccionario de variables está en `data/diccionario_variables_tef.md`.
 
 ## Uso de la interfaz
 
-1. Revisar en **Datos** la muestra, la calidad y el resumen numérico.
+1. Cargar `data/TEF_chile.csv` en la barra lateral y revisar en **Datos** la muestra, la calidad y el resumen numérico.
 2. En **Exploración**, cambiar el segmento (tipo de transacción, banco, alerta, cambio de cuenta, hora o tipo de fraude) y revisar monto, distribuciones y correlaciones.
 3. En **Modelo**, leer precisión, recall, F1, ROC AUC, la matriz de confusión y los coeficientes.
 4. En **Agente**, elegir una pregunta sugerida o escribir otra. Con Ollama activo, la clase `AgenteDatos` elige herramientas de calidad, segmentos o modelo y envía ese contexto al modelo local. Si Ollama no responde, aparece un resumen armado con las mismas cifras.
@@ -144,4 +147,4 @@ Los histogramas de variables continuas usan una muestra reproducible de hasta 15
 
 ## Fuente de los datos
 
-El archivo fue incorporado al proyecto junto con su diccionario, que lo describe como dataset sintético de TEF. En el informe hay que citar la URL pública de origen (Kaggle u otra fuente) además de este repositorio.
+El archivo fue incorporado al proyecto junto con su diccionario, que lo describe como dataset sintético de TEF. El código está en https://github.com/Rolando-LG/UCG-Proyecto-Final-TEF y la demostración en https://youtu.be/3u8X8Fbs5Q8. En el informe hay que citar también la URL pública de origen del dataset (Kaggle u otra fuente).
